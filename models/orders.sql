@@ -1,9 +1,31 @@
-select
-  p.orderid as order_id,
-  p.amount/100 as amount,
-  o.customer_id as customer_id
-  from raw.stripe.payment as p
-  left join {{ref('stg_orders')}} as o
-  on p.orderid = o.order_id
-  where p.status = 'success'
+with orders as  (
+    select * from {{ ref('stg_orders' )}}
+),
 
+payments as (
+    select * from {{ ref('stg_payments') }}
+),
+
+order_payments as (
+    select
+        order_id,
+        sum(case when status = 'success' then amount end) as amount
+
+    from payments
+    group by 1
+),
+
+final as (
+
+    select
+        orders.order_id,
+        orders.customer_id,
+        orders.order_date,
+        orders.status,
+        coalesce(order_payments.amount, 0) as amount
+
+    from orders
+    left join order_payments using (order_id)
+)
+
+select * from final
