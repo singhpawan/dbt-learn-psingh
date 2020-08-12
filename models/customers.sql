@@ -15,12 +15,12 @@ orders as (
     select * from {{ ref('stg_orders') }}
 ),
 
-orders_v2 as (
+order_payments as (
     
     select 
-    order_id, sum(amount) as lifetime_value
+    order_id,customer_id,sum(amount) as lifetime_value
     from {{ref('orders')}}
-    group by 1
+    group by 1,2
 ),
 
 customer_orders as (
@@ -56,6 +56,6 @@ final as (
 )
 
 select f.*, o.* 
-from final
-left join order_v2 o
+from final f
+inner join order_payments o
 on f.customer_id = o.customer_id
